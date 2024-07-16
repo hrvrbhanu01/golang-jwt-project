@@ -17,8 +17,8 @@ import (
 	"github.com/hrvrbhanu01/golang-jwt-project/database"
 	"github.com/hrvrbhanu01/golang-jwt-project/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	//"github.com/hrvrbhanu01/golang-jwt-project/database"
 )
 
@@ -82,7 +82,14 @@ func SignUp()gin.HandlerFunc{
 	}
 }
 
-func Login()
+func Login() gin.HandlerFunc{
+	return func(c *gin.Context){
+		var ctx, cancel=context.WithTimeout(context.Background(), 100*time.Second)
+		var user models.User
+
+
+	}
+}
 
 func GetUsers()
 

@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golang-jwt-project/bcrypt"
-	"golang-jwt-project/helpers"
 	helper "golang-jwt-project/helpers"
-	"golang-jwt-project/models"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,12 +12,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/hrvrbhanu01/golang-jwt-project/database"
-	"github.com/hrvrbhanu01/golang-jwt-project/models"
+	database "golang-jwt-project/database"
+	model "golang-jwt-project/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	//"github.com/hrvrbhanu01/golang-jwt-project/database"
 )
 
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
@@ -29,10 +26,10 @@ func HashPassword()
 
 func VerifyPassword()
 
-func SignUp()gin.HandlerFunc{
+func Signup()gin.HandlerFunc{
 	return func(c *gin.Context){
 		var ctx, cancel=context.WithTimeout(context.Background(), 100*time.Second)
-		var user models.User
+		var user model.User
 
 		if err:=c.BindJSON(&user); err !=nil{
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -62,13 +59,13 @@ func SignUp()gin.HandlerFunc{
 			c.JSON(http.StatusInternalServerError, gin.H{"error":"this email or phone number already exists!"})
 		}
 
-		user.Created_at, _=time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		user.Updated_at, _=time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		user.Created_at, _= time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		user.Updated_at, _= time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.ID=primitive.NewObjectID()
-		user.User_id=user.ID.Hex()
-		token, refreshToken,_ :=helper.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, *user.User_type, *&user.User_id)
-		user.Token=&token
-		user.Refresh_token=&refreshToken
+		user.User_id = user.ID.Hex()
+		token, refreshToken,_ := helper.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, *user.User_type, *&user.User_id)
+		user.Token = &token
+		user.Refresh_token = &refreshToken
 		//to insert it into the DB
 		resultInsertionNumber, insertErr:=userCollection.InsertOne(ctx, user)
 		if insertErr!=nil{
@@ -85,7 +82,7 @@ func SignUp()gin.HandlerFunc{
 func Login() gin.HandlerFunc{
 	return func(c *gin.Context){
 		var ctx, cancel=context.WithTimeout(context.Background(), 100*time.Second)
-		var user models.User
+		var user model.User
 
 
 	}
@@ -103,8 +100,8 @@ func GetUser() gin.HandlerFunc{
 		}
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
-		var user models.User
-		err:=user.Collection.FindOne(ctx, bson.M{"user_id":userId}).Decode(&user)
+		var user model.User
+		err:=userCollection.FindOne(ctx, bson.M{"user_id":userId}).Decode(&user)
 		defer cancel()
 		if err!=nil{
 			c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})

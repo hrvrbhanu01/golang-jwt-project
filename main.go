@@ -17,7 +17,7 @@ func main(){
 	router := gin.New()  //gin is basically creating a router for us!
 	router.Use(gin.Logger())
 
-	routes.AuthRoutes(router)
+	routes.authRoutes(router)
 	routes.userRoutes(router)
 
 	router.GET("/api-1", func(c *gin.Context){

@@ -3,13 +3,13 @@ package helper
 import (
 	"context"
 	"fmt"
-	"golang-jwt-project/database"
+	database "golang-jwt-project/database"
 	"log"
 	"os"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/hrvrbhanu01/golang-jwt-project/database"
+	//"github.com/hrvrbhanu01/golang-jwt-project/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -47,7 +47,7 @@ func GenerateAllTokens(email string, firstName string, lastName string, userType
 		},
 	}
 
-	token, err := jwt.NewWithClaims(jwt.SignedMethodHS256, claims).SignedString([]byte(SECRET_KEY))
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(SECRET_KEY))
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte(SECRET_KEY))
 	if err!=nil{
 		log.Panic(err)

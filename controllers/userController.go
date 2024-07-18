@@ -166,6 +166,34 @@ func GetUsers() gin.HandlerFunc{
 		startIndex := (page-1) * recordPerPage
 		startIndex, err = strconv.Atoi(c.Query("startIndex"))
 
+		//mongoDB concepts:stages=
+		matchStage := bson.D{"$match", bson.D{{}}} //here we have nothing to match so we are not using anything inside .D{}
+		groupStage := bson.D{"$group", bson.D{
+			{Key: "_id", Value: bson.D{"_id", "null"}}, 
+			{Key: "total_count", Value: bson.D{{Key: "$sum", Value: 1}}}, 
+			{Key: "data", Value: bson.D{{Key: "$push", Value: "$$Root"}}}
+			}} //we can group all the records using this $groupStage, if you want the total count of the data records in the database , you'll group them together using their _id then $sum will give the count 
+																																																						//we use $push to see the data as well together with the total_count , that's why we use push here! 
+		projectStage := bson.D{
+			{Key: "$project", Value: bson.D{
+				{Key: "_id", Value: 0},
+				{Key: "total_count", Value: 1},
+				{Key: "user_items", Value: bson.D{{Key: "$slice", Value: []interface{}{"$data", startIndex, recordPerPage}}}},
+			}}
+		}
+
+		userCollection.Aggregate(ctx, mongo.Pipeline{
+			matchStage, groupStage, projectStage
+		})
+		defer context()
+		if err!=nil{
+			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occurred while listing user items!"})
+		}
+		var allUsers []bson.M
+		if err = result.All(ctx, &allUsers); err!=nil{
+			log.Fatal(err)
+		}
+		c.JSON(http.StatusOK, allUsers[0]) //we'll send all the users to the frontend or postman!
 
 	}
 }

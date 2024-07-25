@@ -47,7 +47,7 @@ func VerifyPassword(userPassword string, providedPassword string)(bool, string) 
 
 func Signup()gin.HandlerFunc{
 	return func(c *gin.Context){
-		var ctx, cancel=context.WithTimeout(context.Background(), 100*time.Second)
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		var user model.User
 
 		if err:=c.BindJSON(&user); err !=nil{

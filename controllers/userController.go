@@ -38,7 +38,7 @@ func VerifyPassword(userPassword string, providedPassword string)(bool, string) 
 	msg := ""
 
 	if err!=nil{
-		msg=fmt.Sprintf("email or password is incorrect!")
+		msg=fmt.Sprintf("email or password is incorrect! Error: %v", err)
 		check=false
 
 	}
@@ -59,7 +59,7 @@ func Signup()gin.HandlerFunc{
 
 		validationErr:=validate.Struct(user)
 		if validationErr!=nil{
-			c.JSON(http.StatusBadRequest, gin.H{"error":validationErr.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"erroerrr":validationErr.Error()})
 			return
 		}	
 		emailCount, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
@@ -93,7 +93,7 @@ func Signup()gin.HandlerFunc{
 		
 		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		
+
 		user.ID = primitive.NewObjectID()
 		userID := user.ID.Hex()
 		user.User_id = &userID

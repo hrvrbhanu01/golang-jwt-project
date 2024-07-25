@@ -48,6 +48,8 @@ func VerifyPassword(userPassword string, providedPassword string)(bool, string) 
 func Signup()gin.HandlerFunc{
 	return func(c *gin.Context){
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
 		var user model.User
 
 		if err:=c.BindJSON(&user); err !=nil{
@@ -60,28 +62,38 @@ func Signup()gin.HandlerFunc{
 			c.JSON(http.StatusBadRequest, gin.H{"error":validationErr.Error()})
 			return
 		}	
-		count, err := userCollection.CountDocuments(ctx, bson.M{"email":user.Email})
-		defer cancel()
-		if err!=nil{
-			log.Panic(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occurred while checking for the email"})
-		}
+		emailCount, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+        if err != nil {
+            log.Printf("Error checking email: %v", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error occurred"})
+            return
+        }
 
-		password := hashPassword(*user.Password)
-		user.Password = &password
+		phoneCount, err := userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
+        if err != nil {
+            log.Printf("Error checking phone: %v", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error occurred"})
+            return
+        }
 
-		count, err = userCollection.CountDocuments(ctx, bson.M{"phone":user.Phone})
-		defer cancel()
-		if err!=nil{
-			log.Panic(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occurred while checking for the phone number!"})
 
-		}
-		if count >0{
-			c.JSON(http.StatusInternalServerError, gin.H{"error":"this email or phone number already exists!"})
-		}
+		
+		if emailCount > 0 || phoneCount > 0 {
+            if emailCount > 0 && phoneCount == 0 {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Email address already in use"})
+            } else if emailCount == 0 && phoneCount > 0 {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Phone number already registered"})
+            } else {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Email address or phone number already exists"})
+            }
+            return
+        }
+		password := hashPassword(*user.Password)   // Assuming a hashPassword function exists
+		user.Password = &password  // Assign hashed password to the user object
+		
 		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		
 		user.ID = primitive.NewObjectID()
 		userID := user.ID.Hex()
 		user.User_id = &userID
@@ -91,7 +103,7 @@ func Signup()gin.HandlerFunc{
 		// to insert it into the DB
 		resultInsertionNumber, insertErr := userCollection.InsertOne(ctx, user)
 		if insertErr != nil {
-			msg := fmt.Sprintf("User item was not created!")
+			msg := fmt.Sprintf("User item was not created! Error: %v", insertErr)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
@@ -105,6 +117,8 @@ func Signup()gin.HandlerFunc{
 func Login() gin.HandlerFunc{
 	return func(c *gin.Context){
 		var ctx, cancel=context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()   // Ensure cancellation happens even on successful login
+
 		var user model.User
 		var foundUser model.User
 
@@ -114,14 +128,14 @@ func Login() gin.HandlerFunc{
 		}
 
 		err:=userCollection.FindOne(ctx, bson.M{"email":user.Email}).Decode(&foundUser)
-		defer cancel()
+		
 		if err != nil{
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "email or password is incorrect!"})
 			return
 		}
 		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
-		defer cancel()
-		if passwordIsValid!=true{
+
+		if !passwordIsValid{
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
